@@ -1,42 +1,49 @@
 package example
 
-import io.circe.generic.auto._
-import endpoints.algebra.Documentation
-import endpoints.openapi
 import endpoints.openapi.model.{Info, OpenApi}
 import endpoints.{algebra, openapi}
+import io.circe.generic.auto._
 
 
-  case class SomeRequest(data: String)
-  case class SomeResponse(data: Int)
+case class SomeRequest(data: String)
 
-  trait SomeEndpoint extends algebra.Endpoints with endpoints.circe.JsonSchemas with endpoints.algebra.JsonSchemaEntities {
+case class SomeResponse(data: Int)
 
-    implicit lazy val requestSchema: JsonSchema[SomeRequest]   = JsonSchema(implicitly, implicitly)
-    implicit lazy val responseSchema: JsonSchema[SomeResponse] = JsonSchema(implicitly, implicitly)
+trait SomeEndpoint extends algebra.Endpoints with endpoints.circe.JsonSchemas with endpoints.algebra.JsonSchemaEntities {
 
-    val request = post(path / "some-resource" / segment[Int]("id"), jsonRequest[SomeRequest](Option("perform an action")))
+  implicit lazy val requestSchema: JsonSchema[SomeRequest] = JsonSchema(implicitly, implicitly)
+  implicit lazy val responseSchema: JsonSchema[SomeResponse] = JsonSchema(implicitly, implicitly)
 
-    val someDocumentedResource =
-      endpoint(
-        request,
-        textResponse(docs = Some("The content of the resource"))
-      )
-  }
+  val request = post(path / "some-resource" / segment[Int]("id"), jsonRequest[SomeRequest](Option("perform an action")))
 
-  object OpenApiEncoder extends endpoints.openapi.model.OpenApiSchemas with endpoints.circe.JsonSchemas
+  val someDocumentedResource =
+    endpoint(
+      request,
+      textResponse(docs = Some("The content of the resource"))
+    )
+}
 
-  object CirceDocs extends openapi.Endpoints with SomeEndpoint with openapi.JsonSchemaEntities { // with endpoints.algebra.CirceEntities {
+object OpenApiEncoder extends endpoints.openapi.model.OpenApiSchemas with endpoints.circe.JsonSchemas
 
-    val api: OpenApi =
-      openApi(Info(title = "API to get some resource", version = "1.0"))(
-        someDocumentedResource
-      )
 
-    import OpenApiEncoder.JsonSchema._
-    import io.circe.Json
-    import io.circe.syntax._
+//
+//  this fails to compile
+// vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+object CirceDocs extends openapi.Endpoints with SomeEndpoint with openapi.JsonSchemaEntities {
+  val api: OpenApi =
+    openApi(Info(title = "API to get some resource", version = "1.0"))(
+      someDocumentedResource
+    )
 
-    val apiJson: Json = api.asJson
+  import OpenApiEncoder.JsonSchema._
+  import io.circe.Json
+  import io.circe.syntax._
 
-  }
+  val apiJson: Json = api.asJson
+
+}
+
+object Main extends App {
+  println("open api docs:")
+  println(CirceDocs.apiJson.spaces4)
+}
