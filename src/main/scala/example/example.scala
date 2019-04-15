@@ -8,11 +8,12 @@ import io.circe.{Decoder, ObjectEncoder}
 
 
 case class SomeRequest(data: String)
+
 object SomeRequest {
   implicit def encoder: ObjectEncoder[SomeRequest] = deriveEncoder[SomeRequest]
+
   implicit def decoder: Decoder[SomeRequest] = deriveDecoder[SomeRequest]
 }
-
 
 
 case class SomeResponse(data: Int)
@@ -43,7 +44,10 @@ object AkkaServer extends endpoints.circe.JsonSchemas with endpoints.akkahttp.se
 }
 
 
-object OpenApiEncoder extends endpoints.openapi.model.OpenApiSchemas with endpoints.circe.JsonSchemas
+object OpenApiEncoder extends endpoints.openapi.model.OpenApiSchemas with endpoints.circe.JsonSchemas {
+  implicit def requestSchema: JsonSchema[SomeRequest] = JsonSchema(implicitly, implicitly)
+
+}
 
 
 //
@@ -60,12 +64,16 @@ object CirceDocs extends openapi.Endpoints with SomeEndpoint with openapi.JsonSc
     //    val x: _root_.example.CirceDocs.DocumentedJsonSchema = implicitly[JsonRequest[SomeRequest]]
 
     implicit val x: OpenApiEncoder.JsonSchema[SomeRequest] = OpenApiEncoder.JsonSchema.apply[SomeRequest](implicitly, implicitly)
-    implicit def requestSchema: OpenApiEncoder.JsonSchema[SomeRequest] = OpenApiEncoder.JsonSchema[SomeRequest](SomeRequest.encoder, SomeRequest.decoder) //(implicitly, implicitly)
-    val someReq: Option[CirceDocs.DocumentedRequestEntity] = jsonRequest[SomeRequest](Option("foo"))(requestSchema)
 
-    implicit val ffsreq: JsonRequest[SomeRequest] = ???
-//    implicit val sc: DocumentedJsonSchema = null // ??? //lazySchema(x)
-//    val r = jsonRequest[SomeRequest](None)
+    implicit def requestSchema: OpenApiEncoder.JsonSchema[SomeRequest] = OpenApiEncoder.JsonSchema[SomeRequest](SomeRequest.encoder, SomeRequest.decoder) //(implicitly, implicitly)
+
+    implicit val weSomehowNeedThis: JsonRequest[SomeRequest] = {
+      // have to produce a
+      val someReq  = jsonRequest[SomeRequest](Option("foo")) //(requestSchema)
+      ???
+    }
+    //    implicit val sc: DocumentedJsonSchema = null // ??? //lazySchema(x)
+    //    val r = jsonRequest[SomeRequest](None)
     //    val r : JsonRequest[SomeRequest] = jsonRequest[SomeRequest](None)
     openApi(Info(title = "API to get some resource", version = "1.0"))(
       someDocumentedResource
