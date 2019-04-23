@@ -18,11 +18,12 @@ object SomeRequest {
 
 case class SomeResponse(data: Int)
 
-trait SomeEndpoint extends algebra.Endpoints with endpoints.algebra.JsonSchemaEntities { //with endpoints.algebra.JsonSchemas
+trait SomeEndpoint extends algebra.Endpoints with endpoints.algebra.JsonSchemaEntities with endpoints.generic.JsonSchemas  { //with endpoints.algebra.JsonSchemas
 
   //  implicit def requestSchema: JsonSchema[SomeRequest] //= lazySchema(implicitly, implicitly)
   //  implicit def responseSchema: JsonSchema[SomeResponse] // = lazySchema(implicitly, implicitly)
 
+  implicit lazy val someRequestSchema: Record[SomeRequest] = field[String]("data").xmap(SomeRequest.apply)(_.data)
 
   def someDocumentedResource(implicit req: JsonRequest[SomeRequest]): Endpoint[(Int, SomeRequest), String] = {
     val request = post(path / "some-resource" / segment[Int]("id"), jsonRequest[SomeRequest](Option("perform an action")))
@@ -32,16 +33,16 @@ trait SomeEndpoint extends algebra.Endpoints with endpoints.algebra.JsonSchemaEn
     )
   }
 }
-
-object AkkaServer extends endpoints.circe.JsonSchemas with endpoints.akkahttp.server.JsonSchemaEntities with SomeEndpoint {
-  implicit def requestSchema: JsonSchema[SomeRequest] = JsonSchema(implicitly, implicitly)
-
-  //  implicit def someReq = jsonRequest[SomeRequest](Option("meh"))
-
-  val route: Route = someDocumentedResource.implementedBy {
-    case (a, b) => s"got $a w/ $b"
-  }
-}
+//
+//object AkkaServer extends endpoints.circe.JsonSchemas with endpoints.akkahttp.server.JsonSchemaEntities with SomeEndpoint {
+//  implicit def requestSchema: JsonSchema[SomeRequest] = JsonSchema(implicitly, implicitly)
+//
+//  //  implicit def someReq = jsonRequest[SomeRequest](Option("meh"))
+//
+//  val route: Route = someDocumentedResource.implementedBy {
+//    case (a, b) => s"got $a w/ $b"
+//  }
+//}
 
 
 object OpenApiEncoder extends endpoints.openapi.model.OpenApiSchemas with endpoints.circe.JsonSchemas {
@@ -67,11 +68,11 @@ object CirceDocs extends openapi.Endpoints with SomeEndpoint with openapi.JsonSc
 
     implicit def requestSchema: OpenApiEncoder.JsonSchema[SomeRequest] = OpenApiEncoder.JsonSchema[SomeRequest](SomeRequest.encoder, SomeRequest.decoder) //(implicitly, implicitly)
 
-    implicit val weSomehowNeedThis: JsonRequest[SomeRequest] = {
-      // have to produce a
-      val someReq  = jsonRequest[SomeRequest](Option("foo")) //(requestSchema)
-      ???
-    }
+//    implicit val weSomehowNeedThis: JsonRequest[SomeRequest] = {
+    ////      // have to produce a
+    ////      val someReq  = jsonRequest[SomeRequest](Option("foo")) //(requestSchema)
+    ////      ???
+    ////    }
     //    implicit val sc: DocumentedJsonSchema = null // ??? //lazySchema(x)
     //    val r = jsonRequest[SomeRequest](None)
     //    val r : JsonRequest[SomeRequest] = jsonRequest[SomeRequest](None)
@@ -92,6 +93,6 @@ object Main extends App {
   println("open api docs:")
   println(CirceDocs.apiJson.spaces4)
   println("akka route :")
-  println(AkkaServer.route)
+//  println(AkkaServer.route)
 
 }
